@@ -1,0 +1,41 @@
+# Cline Project Instructions & Tool Usage Guidelines
+
+To avoid common tool execution errors, always adhere to the following rules:
+
+## 1. Tool Parameter Requirements
+- **write_to_file**: ALWAYS provide both `path` (absolute path) and `content` (full file content). Never omit either.
+- **read_file**: ALWAYS provide the `path` parameter.
+- **execute_command**: ALWAYS provide the `command` parameter.
+- **ask_followup_question**: ALWAYS provide the `question` parameter.
+
+## 2. XML Formatting
+- All tool calls MUST be wrapped in `<tool_call>` tags.
+- Parameters MUST be wrapped in `<parameter_name>value</parameter_name>` or `<arg_key>key</arg_key><arg_value>value</arg_value>` tags as per the specific tool's requirements.
+- Never respond conversationally when a tool call is required.
+
+## 3. File Integrity
+- When updating files, ensure the file is syntactically correct.
+- Avoid partial writes that leave open parentheses or unfinished statements (e.g., `os.remove(fp` without closing `)`).
+- Always verify the end of the file after a `write_to_file` operation to ensure no truncation occurred.
+
+## 4. Git & GitHub Workflow
+- Use feature branches for changes.
+- Run `black .` to ensure formatting consistency before committing.
+- Verify DAG integrity using `tests/test_dag.py` before pushing.
+
+## 5. Troubleshooting Common Errors
+- **Missing Parameters**: Double-check required fields (e.g., `path` for `write_to_file`, `command` for `execute_command`).
+- **Partial Writes**: Ensure all content is written in one operation to avoid syntax errors.
+- **XML Syntax**: Validate tool call structure to prevent parsing failures.
+
+**Example Fix for write_to_file Errors**:
+When editing `user_analytics_dag.py`, I used a heredoc in `execute_command` to write the entire file at once, ensuring all parameters (like `path` and `content`) were included in a single operation.
+
+**Example Fix for execute_command Errors**:
+Always include `requires_approval` (even if `false`) to avoid missing parameter errors.
+
+**Example Fix for read_file Errors**:
+Never assume file paths—always specify the absolute path (e.g., `/Users/vivekchaganti/projects/...`) instead of relative paths.
+
+**Example Fix for ask_followup_question Errors**:
+Always provide a clear, specific question (e.g., "What is the start date for the DAG?" instead of "What do you need?").
