@@ -6,6 +6,7 @@ API_URL = "https://randomuser.me/api/?results=1000"  # Adjusted to avoid quota
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 OUTPUT_FILE = os.path.join(DATA_DIR, "users_raw.parquet")
 
+
 def flatten_user(user: dict) -> dict:
     """Flattens nested user data into a clean dictionary."""
     location = user.get("location", {})
@@ -16,7 +17,7 @@ def flatten_user(user: dict) -> dict:
     name = user.get("name", {})
     dob = user.get("dob", {})
     registered = user.get("registered", {})
-    
+
     return {
         "uuid": login.get("uuid"),
         "username": login.get("username"),
@@ -44,6 +45,7 @@ def flatten_user(user: dict) -> dict:
         "registered_age": registered.get("age"),
     }
 
+
 def fetch_users_data(url: str = API_URL) -> list:
     """Fetch users from API with error handling."""
     try:
@@ -54,22 +56,28 @@ def fetch_users_data(url: str = API_URL) -> list:
         print(f"API error: {e}")
         return []
 
+
 def process_and_save_parquet() -> str:
     """Main pipeline: fetch -> flatten -> save Parquet."""
     os.makedirs(DATA_DIR, exist_ok=True)
     users = fetch_users_data()
     if not users:
         raise ValueError("No API data retrieved")
-    
+
     df = pd.DataFrame([flatten_user(u) for u in users])
-    
+
     # Clean date formats
-    df["dob_date"] = pd.to_datetime(df["dob_date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    df["registered_date"] = pd.to_datetime(df["registered_date"], errors="coerce").dt.strftime("%Y-%m-%d")
-    
+    df["dob_date"] = pd.to_datetime(df["dob_date"], errors="coerce").dt.strftime(
+        "%Y-%m-%d"
+    )
+    df["registered_date"] = pd.to_datetime(
+        df["registered_date"], errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+
     # Save to Parquet
     df.to_parquet(OUTPUT_FILE, index=False, compression="snappy")
     return OUTPUT_FILE
+
 
 if __name__ == "__main__":
     process_and_save_parquet()
