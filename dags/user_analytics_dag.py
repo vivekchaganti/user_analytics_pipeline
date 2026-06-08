@@ -91,7 +91,7 @@ def _cleanup_old_parquet_files(days_to_keep=3, **context):
 
 default_args = {
     "owner": "vivekchaganti",
-    "start_date": datetime(2026, 6, 24),
+    "start_date": datetime(2026, 6, 8),
     "retries": 3,
     "retry_delay": timedelta(minutes=5),
 }
@@ -110,6 +110,7 @@ with DAG(
     extract_api_task = PythonOperator(
         task_id="extract_api_to_parquet",
         python_callable=process_and_save_parquet,
+        provide_context=True,
     )
 
     load_staging_task = PythonOperator(

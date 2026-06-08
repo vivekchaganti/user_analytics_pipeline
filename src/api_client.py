@@ -57,9 +57,20 @@ def fetch_users_data(url: str = API_URL) -> list:
         return []
 
 
-def process_and_save_parquet() -> str:
-    """Main pipeline: fetch -> flatten -> save Parquet."""
+def process_and_save_parquet(execution_date=None, **context) -> str:
+    """Main pipeline: fetch -> flatten -> save Parquet with execution date."""
     os.makedirs(DATA_DIR, exist_ok=True)
+
+    # Get execution date from context if not provided directly
+    if execution_date is None and context:
+        execution_date = context.get("ds", "")
+
+    # Build filename with execution date
+    if execution_date:
+        output_file = os.path.join(DATA_DIR, f"users_raw_{execution_date}.parquet")
+    else:
+        output_file = os.path.join(DATA_DIR, "users_raw.parquet")
+
     users = fetch_users_data()
     if not users:
         raise ValueError("No API data retrieved")
@@ -75,8 +86,8 @@ def process_and_save_parquet() -> str:
     ).dt.strftime("%Y-%m-%d")
 
     # Save to Parquet
-    df.to_parquet(OUTPUT_FILE, index=False, compression="snappy")
-    return OUTPUT_FILE
+    df.to_parquet(output_file, index=False, compression="snappy")
+    return output_file
 
 
 if __name__ == "__main__":
