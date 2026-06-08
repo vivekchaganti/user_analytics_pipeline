@@ -1,0 +1,86 @@
+# Cline Project Instructions & Strict Tool Usage Guidelines
+
+To avoid common tool execution errors and token limits with free models, you MUST adhere strictly to the following rules, XML formatting, and workflows.
+
+## 1. XML Formatting & General Protocol
+- All tool executions MUST be written using strict, properly closed XML tags.
+- You are strictly prohibited from hallucinating parameters, truncating code, or responding conversationally when a tool call is required.
+- **Never** use placeholders like `// ...existing code...`. You must output the fully functional code.
+
+## 2. Tool Parameter Requirements & Syntax
+
+### `replace_in_file` (PREFERRED FOR EDITING)
+Always use this for editing existing files to save tokens and prevent truncation. 
+- The text inside the `<<<<` and `====` markers MUST exactly match the existing file content, line for line.
+- Keep the diff scope narrow (only the specific lines changing + minimal surrounding context).
+
+<replace_in_file>
+<path>src/path/to/file.py</path>
+<diff>
+<<<<
+def old_function():
+    pass
+====
+def new_function():
+    return True
+>>>>
+</diff>
+</replace_in_file>
+
+
+### `write_to_file` (ONLY FOR NEW OR VERY SMALL FILES)
+- ALWAYS provide both `path` (absolute or relative) and `content` (the 100% complete, un-truncated file content). Never omit either.
+
+<write_to_file>
+<path>src/path/to/new_file.py</path>
+<content>
+# THE FULL, UNTRUNCATED CODE GOES HERE.
+# DO NOT LEAVE OUT ANY LINES.
+</content>
+</write_to_file>
+
+
+### `read_file`
+- ALWAYS read a file before attempting to edit it to ensure accurate replacements.
+
+<read_file>
+<path>src/path/to/file.py</path>
+</read_file>
+
+
+### `execute_command`
+- ALWAYS provide the `command` parameter.
+- ALWAYS include `requires_approval` (even if `false`).
+- Wait for the user to provide the output of the command before proceeding.
+
+<execute_command>
+  <command>cd /Users/vivekchaganti/projects/user_analytics_pipeline && python -m pytest tests/</command>
+  <requires_approval>false</requires_approval>
+</execute_command>
+
+
+### `ask_followup_question`
+- ALWAYS provide the `question` parameter.
+
+<ask_followup_question>
+<question>Could you clarify which parameters you want to pass to this DAG?</question>
+</ask_followup_question>
+
+
+## 3. File Integrity & Anti-Truncation
+- When updating files, ensure the file is syntactically correct.
+- Avoid partial writes that leave open parentheses or unfinished statements (e.g., `os.remove(fp` without closing `)`).
+- Always verify the end of the file after a `write_to_file` operation to ensure no truncation occurred.
+- If a file is too large, you MUST switch to using `<replace_in_file>`.
+
+## 4. Git & GitHub Workflow
+- Use feature branches for all changes.
+- Run `black .` to ensure formatting consistency before committing.
+- Verify DAG integrity using `tests/test_dag.py` before pushing.
+
+## 5. Troubleshooting Common Errors
+- **Missing Parameters**: Double-check required fields (e.g., `path` for `write_to_file`, `command` for `execute_command`).
+  - *Example Mistake*: `<execute_command> <requires_approval>false</requires_approval> </execute_command>`
+  - *Example Fix*: `<execute_command> <command>git push</command> <requires_approval>false</requires_approval> </execute_command>`
+- **Partial Writes**: Ensure all `<content>` is written in one operation to avoid syntax errors. 
+- **XML Syntax**: Validate tool call structure to prevent parsing failures. Always ensure tags like `</write_to_file>` are fully closed.
