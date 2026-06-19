@@ -4,7 +4,12 @@ import pandas as pd
 
 API_URL = "https://randomuser.me/api/?results=1000"  # Adjusted to avoid quota
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-OUTPUT_FILE = os.path.join(DATA_DIR, "users_raw.parquet")
+PARQUET_FILE_PREFIX = "users_raw"
+PARQUET_FILE_GLOB = f"{PARQUET_FILE_PREFIX}_*.parquet"
+
+
+def parquet_file_path(execution_date: str) -> str:
+    return os.path.join(DATA_DIR, f"{PARQUET_FILE_PREFIX}_{execution_date}.parquet")
 
 
 def flatten_user(user: dict) -> dict:
@@ -57,9 +62,19 @@ def fetch_users_data(url: str = API_URL) -> list:
         return []
 
 
-def process_and_save_parquet() -> str:
-    """Main pipeline: fetch -> flatten -> save Parquet."""
+def process_and_save_parquet(execution_date=None, **context) -> str:
+    """Main pipeline: fetch -> flatten -> save Parquet with execution date."""
     os.makedirs(DATA_DIR, exist_ok=True)
+
+    # Get execution date from context if not provided directly
+    if execution_date is None and context:
+        execution_date = context.get("ds", "")
+
+    if not execution_date:
+        raise ValueError("execution_date is required to build the parquet file path")
+
+    output_file = parquet_file_path(execution_date)
+
     users = fetch_users_data()
     if not users:
         raise ValueError("No API data retrieved")
@@ -75,8 +90,8 @@ def process_and_save_parquet() -> str:
     ).dt.strftime("%Y-%m-%d")
 
     # Save to Parquet
-    df.to_parquet(OUTPUT_FILE, index=False, compression="snappy")
-    return OUTPUT_FILE
+    df.to_parquet(output_file, index=False, compression="snappy")
+    return output_file
 
 
 if __name__ == "__main__":
