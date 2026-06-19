@@ -1,6 +1,7 @@
-import os
 import pandas as pd
 from sqlalchemy import create_engine
+
+from api_client import parquet_file_path
 
 # Database connection details - these would typically be in .env or Airflow connections
 DB_USER = "airflow"
@@ -9,16 +10,19 @@ DB_HOST = "postgres"  # Use 'localhost' if running outside Docker
 DB_PORT = "5432"
 DB_NAME = "user_analytics_dw"
 
-# Paths
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-INPUT_FILE = os.path.join(DATA_DIR, "users_raw.parquet")
 
-
-def load_parquet_to_staging():
+def load_parquet_to_staging(execution_date=None, **context):
     """Loads the Parquet file into the Postgres staging table."""
-    print(f"Reading data from {INPUT_FILE}...")
+    if execution_date is None and context:
+        execution_date = context.get("ds")
+
+    if not execution_date:
+        raise ValueError("execution_date is required to locate the parquet file")
+
+    input_file = parquet_file_path(execution_date)
+    print(f"Reading data from {input_file}...")
     try:
-        df = pd.read_parquet(INPUT_FILE)
+        df = pd.read_parquet(input_file)
     except Exception as e:
         print(f"Error reading Parquet file: {e}")
         raise

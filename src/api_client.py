@@ -4,7 +4,12 @@ import pandas as pd
 
 API_URL = "https://randomuser.me/api/?results=1000"  # Adjusted to avoid quota
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-OUTPUT_FILE = os.path.join(DATA_DIR, "users_raw.parquet")
+PARQUET_FILE_PREFIX = "users_raw"
+PARQUET_FILE_GLOB = f"{PARQUET_FILE_PREFIX}_*.parquet"
+
+
+def parquet_file_path(execution_date: str) -> str:
+    return os.path.join(DATA_DIR, f"{PARQUET_FILE_PREFIX}_{execution_date}.parquet")
 
 
 def flatten_user(user: dict) -> dict:
@@ -65,11 +70,10 @@ def process_and_save_parquet(execution_date=None, **context) -> str:
     if execution_date is None and context:
         execution_date = context.get("ds", "")
 
-    # Build filename with execution date
-    if execution_date:
-        output_file = os.path.join(DATA_DIR, f"users_raw_{execution_date}.parquet")
-    else:
-        output_file = os.path.join(DATA_DIR, "users_raw.parquet")
+    if not execution_date:
+        raise ValueError("execution_date is required to build the parquet file path")
+
+    output_file = parquet_file_path(execution_date)
 
     users = fetch_users_data()
     if not users:

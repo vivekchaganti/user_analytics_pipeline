@@ -26,9 +26,12 @@ This repository contains an Airflow‑based ETL pipeline that extracts user data
 - **Airflow** – orchestrates the ETL workflow:
   - `extract_api_to_parquet` – pulls data from the API and writes Parquet files.
   - `load_parquet_to_staging` – loads Parquet files into staging tables.
-  - `transform_staging_to_warehouse` – runs SQL to populate the star schema.
+  - `dq_*` – SQL checks that each return TRUE/FALSE via `DQSqlCheckOperator`.
+  - `ensure_warehouse_schema` – creates staging/dim/fact tables if they do not exist.
+  - `update_dim_users` / `update_dim_locations` / `update_dim_dates` – load dimensions in parallel.
+  - `update_fact_user_registrations` – loads the fact table after dimensions complete.
   - `cleanup_old_parquet_files` – removes Parquet files older than 3 days.
-- **Python modules** (`src/`) – contain the API client and DB loader logic.
+- **Python modules** (`src/`) – API client, DB loader, DQ checks, and warehouse SQL.
 
 ## Schema Overview
 
